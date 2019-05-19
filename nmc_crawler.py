@@ -57,7 +57,7 @@ def get_sub_url(kind, base_url, suffix):
                         if sub_htmls.split("/")[3] == base_url.split("/")[5]:
                             htmls.append(sub_htmls)                    
         except:
-            sleep_message('stations_url')
+            sleep_message('station_url')
 
     return ['{}{}'.format(domain_name,html) for html in list(set(htmls))]
 
@@ -86,9 +86,9 @@ def get_img_urls(url, resolution):
 def download(urls, kind, region, resolution, savepath, debug):
     # Download images to savepath
     savepath = os.path.join(savepath, kind, region)
-    if region == 'regions':
+    if region == 'region':
         print ('Downloading regional radar maps......')
-    elif region == 'stations':
+    elif region == 'station':
         print ('Downloading ' + urls[0].split("/")[5] + ' radar maps......')
     elif region == 'china':
         print ('Downloading China ' + urls[0].split("/")[-1][0:-4] + ' weatherchart ......')
@@ -98,26 +98,19 @@ def download(urls, kind, region, resolution, savepath, debug):
             htmls = get_img_urls(url, resolution)
 
             # get dir_name and subdir_name
-            if region == 'regions':
+            if region == 'region':
                 dir_name = url.split("/")[5][:-5]
                 subdir_name = ''
-            elif region == 'stations':
+            elif region == 'station':
                 dir_name = url.split("/")[5]
                 subdir_name = url.split("/")[6][:-4]
             elif region == 'china':
                 dir_name = ''
                 subdir_name = url.split("/")[-1][:-4]
 
-            # Check whether dirs of savepath exists. If not, create it.
-            full_savepath = os.path.join(savepath, dir_name, subdir_name)
-            if not os.path.exists(full_savepath):
-                if debug > 0:
-                    print ('mkdir ' + full_savepath)
-                os.makedirs(full_savepath, exist_ok=True)
-
-            if region == 'regions':
+            if region == 'region':
                 print ('    Downloading', dir_name, 'mosaics')
-            elif region == 'stations' and debug > 0:
+            elif region == 'station' and debug > 0:
                 print ('    Downloading', subdir_name, 'mosaics')
             elif region == 'china' and debug > 0:
                 print ('    Downloading', subdir_name)
@@ -126,10 +119,21 @@ def download(urls, kind, region, resolution, savepath, debug):
             for html in htmls:
                 # get date for img_name
                 split_html = html.split("/")
-                name = ''.join(split_html[4:7])
-                sdate = split_html[9].find(name)
+                date = ''.join(split_html[4:7])
+                sdate = split_html[9].find(date)
                 edate = sdate + 12
                 name  = split_html[9][sdate:edate]
+
+                # Check whether dirs of savepath exists. If not, create it.
+                if kind == 'radar':
+                    full_savepath = os.path.join(savepath, dir_name, subdir_name, date[:-2], date[-4:])
+                elif kind == 'weatherchart':
+                    full_savepath = os.path.join(savepath, dir_name, date[:-2], subdir_name)
+
+                if not os.path.exists(full_savepath):
+                    if debug > 0:
+                        print ('mkdir ' + full_savepath)
+                    os.makedirs(full_savepath, exist_ok=True)
 
                 if kind == 'radar':
                     fullfilename = os.path.join(full_savepath, name + '.png')
@@ -150,23 +154,23 @@ def download(urls, kind, region, resolution, savepath, debug):
 
         finally:
             finish_output = '    Finish. Save images to ' + os.path.join(savepath,dir_name)
-            if region == 'regions':
+            if region == 'region':
                 print (finish_output)
     
-    if region == 'stations':
+    if region == 'station':
         print (finish_output)
 
 # Get all urls
 def download_imgs(kind, region, resolution, savepath, debug):
     # get main urls;
-    # for mosaics: url of areas, suffix = html
-    # for stations: url of provinces, suffix = htm
+    # for region: url of areas, suffix = html
+    # for station: url of provinces, suffix = htm
     # for weatherchart: url of china, suffix = htm
-    if region == 'regions':
+    if region == 'region':
         suffix = 'html'
         main_htmls = get_main_url(kind, base_mosaic_url, suffix)
 
-    elif region == 'stations':
+    elif region == 'station':
         suffix = 'htm'
         main_htmls = get_main_url(kind, base_station_url, suffix)
 
@@ -175,11 +179,11 @@ def download_imgs(kind, region, resolution, savepath, debug):
         main_obs_htmls = get_main_url(kind, base_obs_url, suffix)
 
     # for mosaics: download directly
-    if region == 'regions':
+    if region == 'region':
         download (main_htmls, kind, region, resolution, savepath, debug)
 
-    # for stations: get urls of sub_stations and download
-    elif region == 'stations':
+    # for station: get urls of sub_station and download
+    elif region == 'station':
         for html in main_htmls:
             sub_htmls = get_sub_url(kind, html, suffix)
             download (sub_htmls, kind, region, resolution, savepath, debug)
@@ -203,8 +207,8 @@ def download_imgs(kind, region, resolution, savepath, debug):
 @click.option(
     '--area',
     '-a',
-    default = 'regions',
-    type=click.Choice(['all', 'regions','stations']),
+    default = 'region',
+    type=click.Choice(['all', 'region','station']),
     help='''
     Region of maps: 
     For weatherchart, you don't
@@ -251,13 +255,10 @@ def main(kind, area, resolution, savepath, verbose):
 
     if kind == 'radar':
         if area == 'all':
-            download_imgs(kind, 'regions', resolution, savepath, verbose)
-            download_imgs(kind, 'stations', resolution, savepath, verbose)
-        elif area == 'regions' or area == 'stations':
+            download_imgs(kind, 'region', resolution, savepath, verbose)
+            download_imgs(kind, 'station', resolution, savepath, verbose)
+        elif area == 'region' or area == 'station':
             download_imgs(kind, area, resolution, savepath, verbose)
-        else:
-            print ('Please input supported area:\
-                all, mosaics and stations')
 
     elif kind == 'weatherchart':
         download_imgs(kind, 'china', resolution, savepath, verbose)
@@ -266,4 +267,4 @@ def main(kind, area, resolution, savepath, verbose):
 if __name__ == '__main__':
     start_time = time.time()
     main()
-    print("--- %s seconds ---" % (time.time() - start_time))
+    # print("--- %s seconds ---" % (time.time() - start_time))
