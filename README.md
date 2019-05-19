@@ -45,12 +45,12 @@ Options:
 
 1. Download regional radar figures:
 
-![radar_1](<https://github.com/zxdawn/nmc-crawler/raw/master/examples/radar_1.gif)
+![radar_1](https://github.com/zxdawn/nmc-crawler/raw/master/examples/radar_1.gif)
 
 2. Download radar figures of all stations:
 
-   ![radar_2](<https://github.com/zxdawn/nmc-crawler/raw/master/examples/radar_2.gif)
+   ![radar_2](https://github.com/zxdawn/nmc-crawler/raw/master/examples/radar_2.gif)
 
 3. Download weathercharts:
 
-   ![weatherchart](<https://github.com/zxdawn/nmc-crawler/raw/master/examples/weatherchart.gif)
+   ![weatherchart](https://github.com/zxdawn/nmc-crawler/raw/master/examples/weatherchart.gif)
