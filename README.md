@@ -44,7 +44,7 @@ Options:
 
 1. Download regional radar figures:
 
-![radar_1](https://github.com/zxdawn/nmc-crawler/raw/master/examples/radar_1.gif)
+   ![radar_1](https://github.com/zxdawn/nmc-crawler/raw/master/examples/radar_1.gif)
 
 2. Download radar figures of all stations:
 
