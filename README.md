@@ -60,28 +60,28 @@ Options:
 ├── radar
 │   ├── region
 │   │   ├── chinaall
-│   │   │   └── yyymm
+│   │   │   └── yyyymm
 │   │   │       └── mmdd
 │   │   ├── dongbei
-│   │   │   └── yyymm
+│   │   │   └── yyyymm
 │   │   │       └── mmdd
 │   │   ├── huabei
-│   │   │   └── yyymm
+│   │   │   └── yyyymm
 │   │   │       └── mmdd
 │   │   ├── huadong
-│   │   │   └── yyymm
+│   │   │   └── yyyymm
 │   │   │       └── mmdd
 │   │   ├── huanan
-│   │   │   └── yyymm
+│   │   │   └── yyyymm
 │   │   │       └── mmdd
 │   │   ├── huazhong
-│   │   │   └── yyymm
+│   │   │   └── yyyymm
 │   │   │       └── mmdd
 │   │   ├── xibei
-│   │   │   └── yyymm
+│   │   │   └── yyyymm
 │   │   │       └── mmdd
 │   │   └── xinan
-│   │       └── yyymm
+│   │       └── yyyymm
 │   │           └── mmdd
 │   └── station
 │       ├── jiang-su
@@ -102,7 +102,7 @@ Options:
 ├── README.md
 └── weatherchart
     └── china
-        └── yyymm
+        └── yyyymm
             ├── cloud-h000
             ├── cloud-h100
             ├── cloud-h200
