@@ -12,187 +12,175 @@ base_mosaic_url = domain_name + '/publish/radar/chinaall.html'
 base_station_url = domain_name + '/publish/radar/bei-jing/da-xing.htm'
 base_obs_url = domain_name + '/publish/observations/china/dm/weatherchart-h000.htm'
 
-def sleep_message(func_name):
-    print('Connection of ' + func_name + ' refused by the server..')
-    print('Let me sleep for 5 seconds')
-    print('ZZzzzz...')
-    sleep(5)
-
-# Get main urls
-def get_main_url(kind, base_url, suffix):
-    htmls = []
-    while htmls == []:
-        try:
-            base_page = requests.get(base_url)
-            soup = BeautifulSoup(base_page.content, 'html.parser')
-            for link in soup.findAll('a'):
-                sub_htmls = link.get('href')
-                if kind == 'radar':
-                    if sub_htmls.startswith('/publish/radar/') & sub_htmls.endswith(suffix):
-                        htmls.append(sub_htmls)
-                elif kind == 'weatherchart':
-                    if sub_htmls.startswith('/publish/observations/china/dm/weatherchart') & sub_htmls.endswith(suffix):
-                        htmls.append(sub_htmls)
-        except:
-            sleep_message('main_url')
-
-    return ['{}{}'.format(domain_name,html) for html in list(set(htmls))]
-
-def get_sub_url(kind, base_url, suffix):
-    htmls = []
-    while htmls == []:
-        try:
-            base_page = requests.get(base_url)
-            soup = BeautifulSoup(base_page.content, 'html.parser')
-            for link in soup.findAll('a'):
-                sub_htmls = link.get('href')
-                if kind == 'radar':
-                    if sub_htmls.startswith('/publish/radar/') & sub_htmls.endswith(suffix):
-                        # Filter out Surpluses
-                        if sub_htmls.split("/")[3] == base_url.split("/")[5]:
-                            htmls.append(sub_htmls)
-                elif kind == 'weatherchart':
-                    if sub_htmls.startswith('/publish/observations/') & sub_htmls.endswith(base_url[-8:]):
-                        # Filter out Surpluses
-                        if sub_htmls.split("/")[3] == base_url.split("/")[5]:
-                            htmls.append(sub_htmls)                    
-        except:
-            sleep_message('station_url')
-
-    return ['{}{}'.format(domain_name,html) for html in list(set(htmls))]
-
-def get_img_urls(url, resolution):
-    page = ''
-    while page == '':
-        try:
-            # Download the Response object and parse
-            page = requests.get(url)
-            soup = BeautifulSoup(page.content, 'html.parser')
-
-            # Finding all instances of 'img' at once
-            pics = soup.find_all('p', class_='img')
-
-            # get url of each picture and save to a list
-            img_urls = []
-            for pic in pics:
-                img_url = pic.img.get('data-original')
-                img_urls.append(img_url)
-            img_urls = [url.replace('small', resolution) for url in img_urls]
-        except:
-            sleep_message('img_urls')
-
-    return img_urls
-
-def download(urls, kind, region, resolution, savepath, debug):
-    # Download images to savepath
-    savepath = os.path.join(savepath, kind, region)
-    if region == 'region':
-        print ('Downloading regional radar maps......')
-    elif region == 'station':
-        print ('Downloading ' + urls[0].split("/")[5] + ' radar maps......')
-    elif region == 'china':
-        print ('Downloading China ' + urls[0].split("/")[-1][0:-4] + ' weatherchart ......')
-
-    for url in urls:
-        try:
-            htmls = get_img_urls(url, resolution)
-
-            # get dir_name and subdir_name
-            if region == 'region':
-                dir_name = url.split("/")[5][:-5]
-                subdir_name = ''
-            elif region == 'station':
-                dir_name = url.split("/")[5]
-                subdir_name = url.split("/")[6][:-4]
-            elif region == 'china':
-                dir_name = ''
-                subdir_name = url.split("/")[-1][:-4]
-
-            if region == 'region':
-                print ('    Downloading', dir_name, 'mosaics')
-            elif region == 'station' and debug > 0:
-                print ('    Downloading', subdir_name, 'mosaics')
-            elif region == 'china' and debug > 0:
-                print ('    Downloading', subdir_name)
-
-            # get name/url and download
-            for html in htmls:
-                # get date for img_name
-                split_html = html.split("/")
-                date = ''.join(split_html[4:7])
-                sdate = split_html[9].find(date)
-                edate = sdate + 12
-                name  = split_html[9][sdate:edate]
-
-                # Check whether dirs of savepath exists. If not, create it.
-                if kind == 'radar':
-                    full_savepath = os.path.join(savepath, dir_name, subdir_name, date[:-2], date[-4:])
-                elif kind == 'weatherchart':
-                    full_savepath = os.path.join(savepath, dir_name, date[:-2], subdir_name)
-
-                if not os.path.exists(full_savepath):
-                    if debug > 0:
-                        print ('mkdir ' + full_savepath)
-                    os.makedirs(full_savepath, exist_ok=True)
-
-                if kind == 'radar':
-                    fullfilename = os.path.join(full_savepath, name + '.png')
-                else:
-                    fullfilename = os.path.join(full_savepath, name + '.jpg')
-
-                if os.path.isfile(fullfilename):
-                    if debug > 0:
-                        print ('    ', name, 'exists in', full_savepath, ' Skip!!')
-                else:
-                    urllib.request.urlretrieve(html, fullfilename)
-                    if debug > 0:
-                        print ('        Downloading',name)
-                
-        except urllib.error.HTTPError as err:
-            # pass
-            print(err.code)
-
-        finally:
-            finish_output = '    Finish. Save images to ' + os.path.join(savepath,dir_name)
-            if region == 'region':
-                print (finish_output)
-    
-    if region == 'station':
-        print (finish_output)
-
 # Get all urls
-def download_imgs(kind, region, resolution, savepath, debug):
-    # get main urls;
-    # for region: url of areas, suffix = html
-    # for station: url of provinces, suffix = htm
-    # for weatherchart: url of china, suffix = htm
-    if region == 'region':
-        suffix = 'html'
-        main_htmls = get_main_url(kind, base_mosaic_url, suffix)
+class NMC(object):
+    def __init__(self, kind, area, resolution, savepath, verbose):
+        self.kind = kind
+        self.area = area
+        self.resolution = resolution
+        self.savepath = savepath
+        self.verbose = verbose
 
-    elif region == 'station':
-        suffix = 'htm'
-        main_htmls = get_main_url(kind, base_station_url, suffix)
+        if self.area == 'region':
+            self.suffix = 'html'
+            self.base_url = base_mosaic_url
 
-    elif region == 'china':
-        suffix = 'htm'
-        main_obs_htmls = get_main_url(kind, base_obs_url, suffix)
+        elif self.area == 'station':
+            self.suffix = 'htm'
+            self.base_url = base_station_url
 
-    # for mosaics: download directly
-    if region == 'region':
-        download (main_htmls, kind, region, resolution, savepath, debug)
+        elif self.area == 'china':
+            self.suffix = 'htm'
+            self.base_url = base_obs_url
 
-    # for station: get urls of sub_station and download
-    elif region == 'station':
-        for html in main_htmls:
-            sub_htmls = get_sub_url(kind, html, suffix)
-            download (sub_htmls, kind, region, resolution, savepath, debug)
+    def get_urls(self):
+    # Get urls
+        htmls = []
+        while htmls == []:
+            try:
+                base_page = requests.get(self.base_url)
+                soup = BeautifulSoup(base_page.content, 'html.parser')
+                for link in soup.findAll('a'):
+                    sub_urls = link.get('href')
+                    if self.kind == 'radar':
+                        if sub_urls.startswith('/publish/radar/') & sub_urls.endswith(self.suffix):
+                            htmls.append(sub_urls)
+                    elif self.kind == 'weatherchart':
+                        if sub_urls.startswith('/publish/observations/china/dm/weatherchart') & sub_urls.endswith(self.suffix):
+                            htmls.append(sub_urls)
+            except:
+                self.sleep_message('get_main_url')
 
-    # for weatherchart: get urls of sub_urls and download
-    elif region == 'china':
-        for html in main_obs_htmls:
-            sub_htmls = get_sub_url(kind, html, suffix)
-            download (sub_htmls, kind, region, resolution, savepath, debug)
+        main_url = ['{}{}'.format(domain_name,html) for html in list(set(htmls))]
+
+        if self.area == 'region':
+            return main_url
+        else:
+            urls = []
+            for url in main_url:
+                urls.extend(self.get_sub_url(url))
+            return urls
+
+    def get_sub_url(self, url):
+        htmls = []
+        while htmls == []:
+            try:
+                base_page = requests.get(url)
+                soup = BeautifulSoup(base_page.content, 'html.parser')
+                for link in soup.findAll('a'):
+                    sub_htmls = link.get('href')
+                    if self.kind == 'radar':
+                        if sub_htmls.startswith('/publish/radar/') & sub_htmls.endswith(self.suffix):
+                            # Filter out Surpluses
+                            if sub_htmls.split("/")[3] == url.split("/")[5]:
+                                htmls.append(sub_htmls)
+                    elif self.kind == 'weatherchart':
+                        if sub_htmls.startswith('/publish/observations/') & sub_htmls.endswith(url[-8:]):
+                            if sub_htmls.split("/")[3] == url.split("/")[5]:
+                                htmls.append(sub_htmls)                    
+            except:
+                self.sleep_message('get_sub_url')
+
+        return ['{}{}'.format(domain_name,html) for html in list(set(htmls))]
+
+    def download(self, urls):
+        # Download images to savepath
+        savepath = os.path.join(self.savepath, self.kind, self.area)
+
+        for url in urls:
+            try:
+                htmls = self.get_img_urls(url)
+
+                # get dir_name and subdir_name
+                if self.area == 'region':
+                    dir_name = url.split("/")[5][:-5]
+                    subdir_name = ''
+                elif self.area == 'station':
+                    dir_name = url.split("/")[5]
+                    subdir_name = url.split("/")[6][:-4]
+                elif self.area == 'china':
+                    dir_name = ''
+                    subdir_name = url.split("/")[-1][:-4]
+
+                if self.area == 'region':
+                    print ('    Downloading', dir_name, 'mosaics')
+                elif self.area == 'station':# and self.verbose > 0:
+                    print ('    Downloading', subdir_name, 'mosaics')
+                elif self.area == 'china':# and self.verbose > 0:
+                    print ('    Downloading', subdir_name)
+
+                # get name/url and download
+                for html in htmls:
+                    # get date for img_name
+                    split_html = html.split("/")
+                    date = ''.join(split_html[4:7])
+                    sdate = split_html[9].find(date)
+                    edate = sdate + 12
+                    name  = split_html[9][sdate:edate]
+
+                    # Check whether dirs of savepath exists. If not, create it.
+                    if self.kind == 'radar':
+                        full_savepath = os.path.join(savepath, dir_name, subdir_name, date[:-2], date[-4:])
+                    elif self.kind == 'weatherchart':
+                        full_savepath = os.path.join(savepath, dir_name, date[:-2], subdir_name)
+
+                    if not os.path.exists(full_savepath):
+                        if self.verbose > 0:
+                            print ('mkdir ' + full_savepath)
+                        os.makedirs(full_savepath, exist_ok=True)
+
+                    if self.kind == 'radar':
+                        fullfilename = os.path.join(full_savepath, name + '.png')
+                    else:
+                        fullfilename = os.path.join(full_savepath, name + '.jpg')
+
+                    if os.path.isfile(fullfilename):
+                        if self.verbose > 0:
+                            print ('    ', name, 'exists in', full_savepath, ' Skip!!')
+                    else:
+                        urllib.request.urlretrieve(html, fullfilename)
+                        if self.verbose > 0:
+                            print ('        Downloading',name)
+
+            except urllib.error.HTTPError as err:
+                # pass
+                print(err.code)
+
+            finally:
+                finish_output = '    Finish. Save images to ' + os.path.join(savepath,dir_name)
+                if self.area == 'region':
+                    print (finish_output)
+        
+        if self.area == 'station':
+            print (finish_output)
+
+    def get_img_urls(self, url):
+        page = ''
+        while page == '':
+            try:
+                # Download the Response object and parse
+                page = requests.get(url)
+                soup = BeautifulSoup(page.content, 'html.parser')
+
+                # Finding all instances of 'img' at once
+                pics = soup.find_all('p', class_='img')
+
+                # get url of each picture and save to a list
+                img_urls = []
+                for pic in pics:
+                    img_url = pic.img.get('data-original')
+                    img_urls.append(img_url)
+                img_urls = [url.replace('small', self.resolution) for url in img_urls]
+            except:
+                self.sleep_message('get_img_urls')
+
+        return img_urls
+
+    def sleep_message(self, func_name):
+        print('Connection of ' + func_name + ' refused by the server..')
+        print('Let me sleep for 5 seconds')
+        print('ZZzzzz...')
+        time.sleep(5)
 
 # -------------------------------------------------------
 @click.command()
@@ -254,15 +242,34 @@ def main(kind, area, resolution, savepath, verbose):
     s.keep_alive = False
 
     if kind == 'radar':
+        # refresh log file
+        f = open('radar.log', 'w+')
+        f.truncate(0)
+
+        # download radar mosaics
         if area == 'all':
-            download_imgs(kind, 'region', resolution, savepath, verbose)
-            download_imgs(kind, 'station', resolution, savepath, verbose)
-        elif area == 'region' or area == 'station':
-            download_imgs(kind, area, resolution, savepath, verbose)
+            nmc = NMC(kind, 'region', resolution, savepath, verbose)
+            all_urls = nmc.get_urls()
+            nmc.download(all_urls)
+
+            nmc = NMC(kind, 'station', resolution, savepath, verbose)
+            all_urls = nmc.get_urls()
+            nmc.download(all_urls)
+
+        elif area in ['region', 'station']:
+            nmc = NMC(kind, area, resolution, savepath, verbose)
+            all_urls = nmc.get_urls()
+            nmc.download(all_urls)
 
     elif kind == 'weatherchart':
-        download_imgs(kind, 'china', resolution, savepath, verbose)
+        # refresh log file
+        f = open('weatherchart.log', 'w+')
+        f.truncate(0)
 
+        # download weathercharts
+        nmc = NMC(kind, 'china', resolution, savepath, verbose)
+        all_urls = nmc.get_urls()
+        nmc.download(all_urls)
 
 if __name__ == '__main__':
     start_time = time.time()
