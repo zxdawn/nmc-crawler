@@ -40,6 +40,11 @@ Options:
   --help                          Show this message and exit.
 ```
 
+Run the script at the background every hour:
+```
+nohup bash -c "while true; do python -u nmc_crawler.py -k radar; sleep 3600; done" > radar.log 2>&1 &
+```
+
 ## Brief example
 
 1. Download regional radar figures:
@@ -99,7 +104,6 @@ Options:
 │       │   ├── shen-yang
 │       │   └── ying-kou
 │       └── ....
-├── README.md
 └── weatherchart
     └── china
         └── yyyymm
