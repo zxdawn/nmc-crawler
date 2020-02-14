@@ -114,9 +114,9 @@ class NMC(object):
                     # get date for img_name
                     split_html = html.split("/")
                     date = ''.join(split_html[4:7])
-                    sdate = split_html[9].find(date)
+                    sdate = split_html[8].find(date)
                     edate = sdate + 12
-                    name  = split_html[9][sdate:edate]
+                    name  = split_html[8][sdate:edate]
 
                     # Check whether dirs of savepath exists. If not, create it.
                     if self.kind == 'radar':
