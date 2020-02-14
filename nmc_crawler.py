@@ -213,7 +213,7 @@ class NMC(object):
     type=click.Choice(['all', 'region','station']),
     help='''
     Region of maps: 
-    For weatherchart, you don't
+    For weatherchart and ltng, you don't
     need to specify this parameter.
     ''',
     show_default=True
