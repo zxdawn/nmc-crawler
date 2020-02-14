@@ -10,7 +10,8 @@ from bs4 import BeautifulSoup
 domain_name = 'http://www.nmc.cn'
 base_mosaic_url = domain_name + '/publish/radar/chinaall.html'
 base_station_url = domain_name + '/publish/radar/bei-jing/da-xing.htm'
-base_obs_url = domain_name + '/publish/observations/china/dm/weatherchart-h000.htm'
+base_wc_url = domain_name + '/publish/observations/china/dm/weatherchart-h000.htm'
+base_ltng_url = domain_name + '/publish/observations/lighting.html'
 
 # Get all urls
 class NMC(object):
@@ -30,8 +31,12 @@ class NMC(object):
             self.base_url = base_station_url
 
         elif self.area == 'china':
-            self.suffix = 'htm'
-            self.base_url = base_obs_url
+            if self.kind == 'ltng':
+                self.base_url = base_ltng_url
+                self.suffix = 'html'
+            elif self.kind == 'weatherchart':
+                self.base_url = base_wc_url
+                self.suffix = 'htm'
 
     def get_urls(self):
     # Get urls
@@ -48,17 +53,21 @@ class NMC(object):
                     elif self.kind == 'weatherchart':
                         if sub_urls.startswith('/publish/observations/china/dm/weatherchart') & sub_urls.endswith(self.suffix):
                             htmls.append(sub_urls)
+                    elif self.kind == 'ltng':
+                        if sub_urls.startswith('/publish/observations/lighting') & sub_urls.endswith(self.suffix):
+                            htmls.append(sub_urls)
             except:
                 self.sleep_message('get_main_url')
 
         main_url = ['{}{}'.format(domain_name,html) for html in list(set(htmls))]
 
-        if self.area == 'region':
+        if self.kind == 'ltng' or self.area == 'region':
             return main_url
         else:
             urls = []
             for url in main_url:
                 urls.extend(self.get_sub_url(url))
+
             return urls
 
     def get_sub_url(self, url):
@@ -100,7 +109,7 @@ class NMC(object):
                     subdir_name = url.split("/")[6][:-4]
                 elif self.area == 'china':
                     dir_name = ''
-                    subdir_name = url.split("/")[-1][:-4]
+                    subdir_name = url.split("/")[-1][:-4].replace(".", "")
 
                 if self.area == 'region':
                     print ('    Downloading', dir_name, 'mosaics')
@@ -114,14 +123,19 @@ class NMC(object):
                     # get date for img_name
                     split_html = html.split("/")
                     date = ''.join(split_html[4:7])
-                    sdate = split_html[8].find(date)
-                    edate = sdate + 12
-                    name  = split_html[8][sdate:edate]
+                    if self.kind == 'ltng':
+                        sdate = split_html[9].find(date)
+                        edate = sdate + 12
+                        name  = split_html[9][sdate:edate]
+                    else:
+                        sdate = split_html[8].find(date)
+                        edate = sdate + 12
+                        name  = split_html[8][sdate:edate]
 
                     # Check whether dirs of savepath exists. If not, create it.
                     if self.kind == 'radar':
                         full_savepath = os.path.join(savepath, dir_name, subdir_name, date[:-2], date[-4:])
-                    elif self.kind == 'weatherchart':
+                    elif self.kind in ['weatherchart', 'ltng']:
                         full_savepath = os.path.join(savepath, dir_name, date[:-2], subdir_name)
 
                     if not os.path.exists(full_savepath):
@@ -187,7 +201,7 @@ class NMC(object):
 @click.option(
     '--kind',
     '-k',
-    type=click.Choice(['radar', 'weatherchart']),
+    type=click.Choice(['radar', 'weatherchart', 'ltng']),
     help='Kind of data',
     required=True
 )
@@ -264,6 +278,16 @@ def main(kind, area, resolution, savepath, verbose):
     elif kind == 'weatherchart':
         # refresh log file
         f = open('weatherchart.log', 'w+')
+        f.truncate(0)
+
+        # download weathercharts
+        nmc = NMC(kind, 'china', resolution, savepath, verbose)
+        all_urls = nmc.get_urls()
+        nmc.download(all_urls)
+
+    elif kind == 'ltng':
+        # refresh log file
+        f = open('lightning.log', 'w+')
         f.truncate(0)
 
         # download weathercharts
