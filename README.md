@@ -26,13 +26,14 @@ Usage: nmc_crawler.py [OPTIONS]
       xinzhang1215@gmail.com
 
 Options:
-  -k, --kind [radar|weatherchart]
+  -k, --kind [radar|weatherchart|ltng]
                                   Kind of data  [required]
   -a, --area [all|region|station]
-                                  Region of maps: 
-                                  For weatherchart, you don't
-                                  need to specify this parameter.  [default:
-                                  region]
+                                  Region of maps:
+                                  For weatherchart and ltng,
+                                  you don't
+                                  need to specify this parameter.
+                                  [default: region]
   -r, --resolution [medium|small]
                                   Resolution of figures  [default: medium]
   -s, --savepath TEXT             Savepath of figures  [default: ./]
@@ -58,6 +59,8 @@ nohup bash -c "while true; do python -u nmc_crawler.py -k radar; sleep 3600; don
 3. Download weathercharts:
 
    ![weatherchart](https://github.com/zxdawn/nmc-crawler/raw/master/examples/weatherchart.gif)
+   
+4. Download lightning figures
 
 ## Directory structure
 
