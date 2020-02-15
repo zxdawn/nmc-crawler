@@ -123,7 +123,7 @@ class NMC(object):
                     # get date for img_name
                     split_html = html.split("/")
                     date = ''.join(split_html[4:7])
-                    if self.kind == 'ltng':
+                    if self.kind == 'ltng' or dir_name == 'chinaall' or self.area == 'china':
                         sdate = split_html[9].find(date)
                         edate = sdate + 12
                         name  = split_html[9][sdate:edate]
